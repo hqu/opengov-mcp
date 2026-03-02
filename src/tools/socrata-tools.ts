@@ -1,87 +1,90 @@
 import { Tool } from '@modelcontextprotocol/sdk/types.js';
-import { 
-  fetchFromSocrataApi, 
-  DatasetMetadata, 
-  CategoryInfo, 
-  TagInfo, 
+import {
+  fetchFromSocrataApi,
+  DatasetMetadata,
+  CategoryInfo,
+  TagInfo,
   ColumnInfo,
-  PortalMetrics 
+  PortalMetrics,
 } from '../utils/api.js';
 
-// Get the default domain from environment
-const getDefaultDomain = () => process.env.DATA_PORTAL_URL?.replace(/^https?:\/\//, '');
+const DEFAULT_DATA_PORTAL_DOMAIN = 'data.cambridgema.gov';
+
+// Get the default domain from environment, falling back to Cambridge Open Data
+const getDefaultDomain = () =>
+  process.env.DATA_PORTAL_URL?.replace(/^https?:\/\//, '') || DEFAULT_DATA_PORTAL_DOMAIN;
 
 // Handler for catalog functionality
-async function handleCatalog(params: { 
-  query?: string; 
+export async function handleCatalogTool(params: {
+  query?: string;
   domain?: string;
-  limit?: number; 
-  offset?: number; 
+  limit?: number;
+  offset?: number;
 }): Promise<DatasetMetadata[]> {
   const { query, domain = getDefaultDomain(), limit = 10, offset = 0 } = params;
-  
+
   const apiParams: Record<string, unknown> = {
     limit,
     offset,
-    search_context: domain // Add search_context parameter with the domain
+    search_context: domain, // Add search_context parameter with the domain
   };
-  
+
   if (query) {
     apiParams.q = query;
   }
 
   const baseUrl = `https://${domain}`;
   const response = await fetchFromSocrataApi<{ results: DatasetMetadata[] }>(
-    '/api/catalog/v1', 
+    '/api/catalog/v1',
     apiParams,
     baseUrl
   );
-  
+
   return response.results;
 }
 
 // Handler for categories functionality
-async function handleCategories(params: { 
-  domain?: string; 
+export async function handleCategoriesTool(params: {
+  domain?: string;
 }): Promise<CategoryInfo[]> {
   const { domain = getDefaultDomain() } = params;
-  
+
   const apiParams: Record<string, unknown> = {
-    search_context: domain // Add search_context parameter with the domain
+    search_context: domain, // Add search_context parameter with the domain
   };
 
   const baseUrl = `https://${domain}`;
-  
+
   try {
     // First try the standard domain_categories endpoint
     const response = await fetchFromSocrataApi<CategoryInfo[]>(
-      '/api/catalog/v1/domain_categories', 
+      '/api/catalog/v1/domain_categories',
       apiParams,
       baseUrl
     );
-    
+
     // If we get a valid array response, return it
     if (Array.isArray(response) && response.length > 0) {
       return response;
     }
-    
+
     // Otherwise, try the alternate approach with only=categories parameter
-    const altResponse = await fetchFromSocrataApi<{categories: CategoryInfo[]}>(
+    const altResponse = await fetchFromSocrataApi<{ categories: CategoryInfo[] }>(
       '/api/catalog/v1',
       { ...apiParams, only: 'categories' },
       baseUrl
     );
-    
+
     return altResponse.categories || [];
   } catch (error) {
     // If the primary endpoint fails, try the alternate approach
     try {
-      const altResponse = await fetchFromSocrataApi<{categories: CategoryInfo[]}>(
+      const altResponse = await fetchFromSocrataApi<{ categories: CategoryInfo[] }>(
         '/api/catalog/v1',
         { ...apiParams, only: 'categories' },
         baseUrl
       );
-      
+
       return altResponse.categories || [];
     } catch {
       // If both approaches fail, rethrow the original error
@@ -91,47 +94,47 @@ async function handleCategories(params: {
 }
 
 // Handler for tags functionality
-async function handleTags(params: { 
-  domain?: string; 
+export async function handleTagsTool(params: {
+  domain?: string;
 }): Promise<TagInfo[]> {
   const { domain = getDefaultDomain() } = params;
-  
+
   const apiParams: Record<string, unknown> = {
-    search_context: domain // Add search_context parameter with the domain
+    search_context: domain, // Add search_context parameter with the domain
   };
 
   const baseUrl = `https://${domain}`;
-  
+
   try {
     // First try the standard domain_tags endpoint
     const response = await fetchFromSocrataApi<TagInfo[]>(
-      '/api/catalog/v1/domain_tags', 
+      '/api/catalog/v1/domain_tags',
       apiParams,
       baseUrl
     );
-    
+
     // If we get a valid array response, return it
     if (Array.isArray(response) && response.length > 0) {
       return response;
     }
-    
+
     // Otherwise, try the alternate approach with only=tags parameter
-    const altResponse = await fetchFromSocrataApi<{tags: TagInfo[]}>(
+    const altResponse = await fetchFromSocrataApi<{ tags: TagInfo[] }>(
       '/api/catalog/v1',
       { ...apiParams, only: 'tags' },
       baseUrl
     );
-    
+
     return altResponse.tags || [];
   } catch (error) {
     // If the primary endpoint fails, try the alternate approach
     try {
-      const altResponse = await fetchFromSocrataApi<{tags: TagInfo[]}>(
+      const altResponse = await fetchFromSocrataApi<{ tags: TagInfo[] }>(
         '/api/catalog/v1',
         { ...apiParams, only: 'tags' },
         baseUrl
       );
-      
+
       return altResponse.tags || [];
     } catch {
       // If both approaches fail, rethrow the original error
@@ -141,42 +144,42 @@ async function handleTags(params: {
 }
 
 // Handler for dataset metadata functionality
-async function handleDatasetMetadata(params: { 
-  datasetId: string; 
-  domain?: string; 
+export async function handleDatasetMetadataTool(params: {
+  datasetId: string;
+  domain?: string;
 }): Promise<Record<string, unknown>> {
   const { datasetId, domain = getDefaultDomain() } = params;
-  
+
   const baseUrl = `https://${domain}`;
   const response = await fetchFromSocrataApi<Record<string, unknown>>(
-    `/api/views/${datasetId}`, 
+    `/api/views/${datasetId}`,
     {},
     baseUrl
   );
-  
+
   return response;
 }
 
 // Handler for column information functionality
-async function handleColumnInfo(params: { 
-  datasetId: string; 
-  domain?: string; 
+export async function handleColumnInfoTool(params: {
+  datasetId: string;
+  domain?: string;
 }): Promise<ColumnInfo[]> {
   const { datasetId, domain = getDefaultDomain() } = params;
-  
+
   const baseUrl = `https://${domain}`;
   const response = await fetchFromSocrataApi<ColumnInfo[]>(
-    `/api/views/${datasetId}/columns`, 
+    `/api/views/${datasetId}/columns`,
     {},
     baseUrl
   );
-  
+
   return response;
 }
 
 // Handler for data access functionality
-async function handleDataAccess(params: { 
-  datasetId: string; 
+export async function handleDataAccessTool(params: {
+  datasetId: string;
   domain?: string;
   query?: string;
   limit?: number;
@@ -188,8 +191,8 @@ async function handleDataAccess(params: {
   having?: string;
   q?: string;
 }): Promise<Record<string, unknown>[]> {
-  const { 
-    datasetId, 
+  const {
+    datasetId,
     domain = getDefaultDomain(),
     query,
     limit = 10,
@@ -199,14 +202,14 @@ async function handleDataAccess(params: {
     order,
     group,
     having,
-    q
+    q,
   } = params;
-  
+
   const apiParams: Record<string, unknown> = {
     $limit: limit,
     $offset: offset,
   };
-  
+
   // Handle comprehensive query parameter if provided
   if (query) {
     apiParams.$query = query;
@@ -219,30 +222,30 @@ async function handleDataAccess(params: {
     if (having) apiParams.$having = having;
     if (q) apiParams.$q = q;
   }
-  
+
   const baseUrl = `https://${domain}`;
   const response = await fetchFromSocrataApi<Record<string, unknown>[]>(
-    `/resource/${datasetId}.json`, 
+    `/resource/${datasetId}.json`,
     apiParams,
     baseUrl
   );
-  
+
   return response;
 }
 
 // Handler for site metrics functionality
-async function handleSiteMetrics(params: { 
-  domain?: string; 
+export async function handleSiteMetricsTool(params: {
+  domain?: string;
 }): Promise<PortalMetrics> {
   const { domain = getDefaultDomain() } = params;
-  
+
   const baseUrl = `https://${domain}`;
   const response = await fetchFromSocrataApi<PortalMetrics>(
-    '/api/site_metrics.json', 
+    '/api/site_metrics.json',
     {},
     baseUrl
   );
-  
+
   return response;
 }
 
@@ -256,9 +259,10 @@ export const UNIFIED_SOCRATA_TOOL: Tool = {
       type: {
         type: 'string',
         enum: ['catalog', 'categories', 'tags', 'dataset-metadata', 'column-info', 'data-access', 'site-metrics'],
-        description: 'The type of operation to perform:' +
+        description:
+          'The type of operation to perform:' +
           '\n- catalog: List datasets with optional search' +
-          '\n- categories: List all dataset categories' + 
+          '\n- categories: List all dataset categories' +
           '\n- tags: List all dataset tags' +
           '\n- dataset-metadata: Get detailed metadata for a specific dataset' +
           '\n- column-info: Get column details for a specific dataset' +
@@ -269,28 +273,43 @@ export const UNIFIED_SOCRATA_TOOL: Tool = {
         type: 'string',
         description: 'Optional domain (hostname only, without protocol). Used with all operation types.',
       },
-      // Search and query parameters
       query: {
         type: 'string',
-        description: 'Search or query string with different uses depending on operation type:' +
+        description:
+          'Search or query string with different uses depending on operation type:' +
           '\n- For type=catalog: Search query to filter datasets' +
           '\n- For type=data-access: SoQL query string for complex data filtering',
       },
-      // Dataset specific parameters
       datasetId: {
         type: 'string',
-        description: 'Dataset identifier required for the following operations:' +
+        description:
+          'Dataset identifier required for the following operations:' +
           '\n- For type=dataset-metadata: Get dataset details' +
           '\n- For type=column-info: Get column information' +
           '\n- For type=data-access: Specify which dataset to query (e.g., 6zsd-86xi)',
       },
-      // Data access specific parameters
       soqlQuery: {
         type: 'string',
-        description: 'For type=data-access only. Optional SoQL query string for filtering data.' +
-          '\nThis is an alias for the query parameter and takes precedence if both are provided.',
+        description:
+          'DEPRECATED: Use query instead. For type=data-access only. Optional SoQL query string for filtering data.',
+        deprecated: true,
       },
-      // Additional SoQL parameters for data-access
+      limit: {
+        type: 'number',
+        description:
+          'Maximum number of results to return:' +
+          '\n- For type=catalog: Limits dataset results' +
+          '\n- For type=data-access: Limits data records returned',
+        default: 10,
+      },
+      offset: {
+        type: 'number',
+        description:
+          'Number of results to skip for pagination:' +
+          '\n- For type=catalog: Skips dataset results' +
+          '\n- For type=data-access: Skips data records for pagination',
+        default: 0,
+      },
       select: {
         type: 'string',
         description: 'For type=data-access only. Specifies which columns to return in the result set.',
@@ -311,25 +330,9 @@ export const UNIFIED_SOCRATA_TOOL: Tool = {
         type: 'string',
         description: 'For type=data-access only. Filters for grouped results, similar to where but for grouped data.',
       },
-      // Full-text search parameter
       q: {
         type: 'string',
         description: 'For type=data-access only. Full text search parameter for free-text searching across the dataset.',
-      },
-      // Pagination parameters
-      limit: {
-        type: 'number',
-        description: 'Maximum number of results to return:' +
-          '\n- For type=catalog: Limits dataset results' +
-          '\n- For type=data-access: Limits data records returned',
-        default: 10,
-      },
-      offset: {
-        type: 'number',
-        description: 'Number of results to skip for pagination:' +
-          '\n- For type=catalog: Skips dataset results' +
-          '\n- For type=data-access: Skips data records for pagination',
-        default: 0,
       },
     },
     required: ['type'],
@@ -337,66 +340,78 @@ export const UNIFIED_SOCRATA_TOOL: Tool = {
   },
 };
 
-// Main handler for the unified tool that routes to the appropriate function
+export const SOCRATA_TOOLS: Tool[] = [UNIFIED_SOCRATA_TOOL];
+
+// Function to handle all Socrata tool calls
 export async function handleSocrataTool(params: Record<string, unknown>): Promise<unknown> {
-  const { type } = params;
-  
+  const type = params.type as string;
+
   switch (type) {
     case 'catalog':
-      return handleCatalog(params as { query?: string; domain?: string; limit?: number; offset?: number });
+      return handleCatalogTool({
+        query: params.query as string,
+        domain: params.domain as string,
+        limit: params.limit as number,
+        offset: params.offset as number,
+      });
+
     case 'categories':
-      return handleCategories(params as { domain?: string });
+      return handleCategoriesTool({
+        domain: params.domain as string,
+      });
+
     case 'tags':
-      return handleTags(params as { domain?: string });
+      return handleTagsTool({
+        domain: params.domain as string,
+      });
+
     case 'dataset-metadata':
-      // Validate required parameters
       if (!params.datasetId) {
         throw new Error('datasetId is required for dataset-metadata operation');
       }
-      return handleDatasetMetadata(params as { datasetId: string; domain?: string });
+      return handleDatasetMetadataTool({
+        datasetId: params.datasetId as string,
+        domain: params.domain as string,
+      });
+
     case 'column-info':
-      // Validate required parameters
       if (!params.datasetId) {
         throw new Error('datasetId is required for column-info operation');
       }
-      return handleColumnInfo(params as { datasetId: string; domain?: string });
-    case 'data-access':
-      // Validate required parameters
+      return handleColumnInfoTool({
+        datasetId: params.datasetId as string,
+        domain: params.domain as string,
+      });
+
+    case 'data-access': {
       if (!params.datasetId) {
         throw new Error('datasetId is required for data-access operation');
       }
-      // Map soqlQuery to query for consistency with the handler
-      if (params.soqlQuery) {
-        params.query = params.soqlQuery;
-      }
-      return handleDataAccess(params as { 
-        datasetId: string; 
-        domain?: string; 
-        query?: string; 
-        limit?: number; 
-        offset?: number;
-        select?: string;
-        where?: string;
-        order?: string;
-        group?: string;
-        having?: string;
-        q?: string;
+
+      // Handle backward compatibility with soqlQuery parameter
+      const query = (params.query || params.soqlQuery) as string;
+
+      return handleDataAccessTool({
+        datasetId: params.datasetId as string,
+        domain: params.domain as string,
+        query,
+        limit: params.limit as number,
+        offset: params.offset as number,
+        select: params.select as string,
+        where: params.where as string,
+        order: params.order as string,
+        group: params.group as string,
+        having: params.having as string,
+        q: params.q as string,
       });
+    }
+
     case 'site-metrics':
-      return handleSiteMetrics(params as { domain?: string });
+      return handleSiteMetricsTool({
+        domain: params.domain as string,
+      });
+
     default:
       throw new Error(`Unknown operation type: ${type}`);
   }
 }
-
-// Export for backward compatibility (we'll remove this later)
-export const handleCatalogTool = handleCatalog;
-export const handleCategoriesTool = handleCategories;
-export const handleTagsTool = handleTags;
-export const handleDatasetMetadataTool = handleDatasetMetadata;
-export const handleColumnInfoTool = handleColumnInfo;
-export const handleDataAccessTool = handleDataAccess;
-export const handleSiteMetricsTool = handleSiteMetrics;
-
-// Export all tools as an array (only contains the unified tool now)
-export const SOCRATA_TOOLS = [UNIFIED_SOCRATA_TOOL];

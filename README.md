@@ -1,172 +1,271 @@
-# OpenGov MCP Server
+# OpenGov MCP Server (Claude Desktop + Codex Desktop Guide)
 
-An MCP (Model Context Protocol) server that enables MCP clients like Claude Desktop to access Socrata Open Data APIs. This integration allows Claude Desktop to search for, retrieve, and analyze public datasets from government data portals.
+An MCP (Model Context Protocol) server that lets Claude Desktop and Codex Desktop query Socrata Open Data portals.
 
-## Overview
+This fork is documented for **manual installation from source** on both **macOS** and **Windows**, with defaults tuned for:
 
-This MCP server provides access to open data from any Socrata-powered data portal, including those from cities, states, and federal agencies such as:
-- [Chicago](https://data.cityofchicago.org)
-- [NYC](https://data.cityofnewyork.us)
-- [San Francisco](https://data.sfgov.org)
-- [Los Angeles](https://data.lacity.org)
-- [And other government entities](https://dev.socrata.com/data/)
+- `https://data.cambridgema.gov`
 
-No API key is required for basic usage, as the server accesses public data.
+## What This Server Does
 
-## Features
+It exposes one MCP tool, `get_data`, for:
 
-With this MCP server, clients can:
-- Search and discover datasets by keyword, category, or tags
-- View dataset metadata and column information
-- Run SQL-like queries to retrieve and analyze data
-- Get portal usage statistics
+- Discovering datasets (`catalog`, `categories`, `tags`)
+- Reading metadata (`dataset-metadata`, `column-info`)
+- Querying records with SoQL (`data-access`)
+- Reading portal metrics (`site-metrics`)
 
-## Installation for Claude Desktop
+## Default Data Portal
 
-### Quick Setup with npx (Recommended)
+If `DATA_PORTAL_URL` is not set, this fork defaults to:
 
-The easiest way to use this MCP server is with npx, which doesn't require any installation:
+- `https://data.cambridgema.gov`
 
-1. **Create or edit your Claude Desktop configuration**:
-   
-   Create or edit `claude_desktop_config.json` in your home directory:
+You can still override per-server with:
 
-   ```json
-   {
-     "mcpServers": { 
-       "opengov": {
-         "command": "npx",
-         "args": ["-y", "opengov-mcp-server@latest"],
-         "env": {
-           "DATA_PORTAL_URL": "https://data.cityofchicago.org"
-         }
-       }
-     }
-   }
-   ```
+- `DATA_PORTAL_URL=https://your-portal.example`
 
-   You can replace the DATA_PORTAL_URL with any Socrata-powered data portal.
+## Required Libraries and Tools
 
-2. **Restart Claude Desktop** (if it was already running)
+### System Requirements
 
-3. **Start using the MCP server**:
-   
-   In Claude Desktop, you can now ask questions like:
-   
-   ```
-   How many cars were towed in Chicago this month?
-   ```
+- Git (for cloning)
+- Node.js `18+` (Node.js `20+` recommended)
+- npm (bundled with Node.js)
 
-   and you can follow up with questions that drill further into detail:
+### Runtime npm Dependencies
 
-   ```
-   Which make and color were towed the most?
-   Also, were there any interesting vanity plates?
-   ```
+- `@modelcontextprotocol/sdk`
+- `axios`
+- `dotenv`
 
-   The first time you run a query, npx will automatically download and run the latest version of the server.
+### Development npm Dependencies (for local build/test/lint)
 
-### Manual Installation from Source
+- `typescript`
+- `vitest`
+- `eslint`
+- `@typescript-eslint/parser`
+- `@typescript-eslint/eslint-plugin`
+- `prettier`
+- `shx`
+- `@types/node`
 
-If you prefer to run from source (for development or customization):
+## Manual Installation from Source (macOS)
 
-1. **Clone this repository**:
-   ```bash
-   git clone https://github.com/srobbin/opengov-mcp-server.git
-   cd opengov-mcp-server
-   ```
+1. Clone source:
 
-2. **Install dependencies and build**:
-   ```bash
-   npm install
-   npm run build
-   ```
+```bash
+git clone https://github.com/<YOUR_GITHUB_USERNAME>/<YOUR_REPO_NAME>.git
+cd <YOUR_REPO_NAME>
+```
 
-3. **Create Claude Desktop configuration**:
-   
-   Create or edit `claude_desktop_config.json` in your home directory:
+2. Install dependencies:
 
-   ```json
-   {
-     "mcpServers": { 
-       "opengov": {
-         "command": "node",
-         "args": [
-           "/path/to/your/opengov-mcp-server/dist/index.js"
-         ],
-         "env": {
-           "DATA_PORTAL_URL": "https://data.cityofchicago.org"
-         }
-       }
-     }
-   }
-   ```
+```bash
+npm install
+```
 
-   Replace `/path/to/your/opengov-mcp-server` with the actual path where you cloned the repository.
+3. Build:
 
-4. **Restart Claude Desktop** (if it was already running)
+```bash
+npm run build
+```
 
-## Available Tool: get_data
+4. Verify build output exists:
 
-This MCP server provides a unified `get_data` tool that Claude Desktop uses to access Socrata data.
+```bash
+ls dist/index.js
+```
 
-### Parameters
+5. Configure Claude Desktop (`~/Library/Application Support/Claude/claude_desktop_config.json`):
 
-- `type` (string, required): Operation type
-  - `catalog`: Search and list datasets
-  - `categories`: List dataset categories
-  - `tags`: List dataset tags
-  - `dataset-metadata`: Get dataset details
-  - `column-info`: Get dataset column information
-  - `data-access`: Query and retrieve records
-  - `site-metrics`: Get portal statistics
+```json
+{
+  "mcpServers": {
+    "opengov": {
+      "command": "node",
+      "args": [
+        "/ABSOLUTE/PATH/TO/<YOUR_REPO_NAME>/dist/index.js"
+      ],
+      "env": {
+        "DATA_PORTAL_URL": "https://data.cambridgema.gov"
+      }
+    }
+  }
+}
+```
 
-- `domain` (string, optional): Data portal hostname (without protocol)
+6. Restart Claude Desktop.
 
-- `query` (string, optional): Search query for datasets
+## Manual Installation from Source (Windows)
 
-- `datasetId` (string): Dataset identifier for specific operations
+1. Clone source:
 
-- `soqlQuery` (string, optional): SoQL query for filtering data
+```powershell
+git clone https://github.com/<YOUR_GITHUB_USERNAME>/<YOUR_REPO_NAME>.git
+cd <YOUR_REPO_NAME>
+```
 
-- `limit` (number, optional): Maximum results to return (default: 10)
+2. Install dependencies:
 
-- `offset` (number, optional): Results to skip for pagination (default: 0)
+```powershell
+npm install
+```
 
-### Example Queries
+3. Build:
 
-These are examples of how Claude Desktop will format queries to the MCP server:
+```powershell
+npm run build
+```
 
-```javascript
-// Find datasets about budgets
+4. Verify build output:
+
+```powershell
+dir dist\index.js
+```
+
+5. Configure Claude Desktop at:
+
+`%APPDATA%\Claude\claude_desktop_config.json`
+
+Use this config (example path shown):
+
+```json
+{
+  "mcpServers": {
+    "opengov": {
+      "command": "node",
+      "args": [
+        "C:\\Users\\<YOUR_USER>\\source\\repos\\<YOUR_REPO_NAME>\\dist\\index.js"
+      ],
+      "env": {
+        "DATA_PORTAL_URL": "https://data.cambridgema.gov"
+      }
+    }
+  }
+}
+```
+
+6. Restart Claude Desktop.
+
+## Codex Desktop Task 1: Install This MCP in Codex Desktop
+
+Add this MCP server to Codex Desktop MCP configuration using the same built `dist/index.js` entrypoint.
+
+### macOS example
+
+```json
+{
+  "mcpServers": {
+    "opengov": {
+      "command": "node",
+      "args": [
+        "/ABSOLUTE/PATH/TO/<YOUR_REPO_NAME>/dist/index.js"
+      ],
+      "env": {
+        "DATA_PORTAL_URL": "https://data.cambridgema.gov"
+      }
+    }
+  }
+}
+```
+
+### Windows example
+
+```json
+{
+  "mcpServers": {
+    "opengov": {
+      "command": "node",
+      "args": [
+        "C:\\Users\\<YOUR_USER>\\source\\repos\\<YOUR_REPO_NAME>\\dist\\index.js"
+      ],
+      "env": {
+        "DATA_PORTAL_URL": "https://data.cambridgema.gov"
+      }
+    }
+  }
+}
+```
+
+After saving config, fully restart Codex Desktop and confirm the MCP tool `get_data` appears.
+
+## Codex Desktop Task 2: Debug and Fix Issues Using Prompts
+
+Use prompts like these inside Codex Desktop:
+
+1. Check build/runtime prerequisites:
+
+```text
+Validate this MCP setup. Confirm Node/npm versions, install deps, run npm run build, and report any errors with exact fixes.
+```
+
+2. Test the server process directly:
+
+```text
+Run node dist/index.js in this repo and check for startup errors. If it fails, identify root cause and patch code/config.
+```
+
+3. Validate MCP config paths:
+
+```text
+Inspect my MCP config and verify command/args paths are correct for my OS. Fix escaping issues for JSON paths.
+```
+
+4. Validate default portal connectivity:
+
+```text
+Use data.cambridgema.gov and run a minimal get_data catalog query. If it fails, debug network/domain/query issues and propose fixes.
+```
+
+5. End-to-end regression check before restart:
+
+```text
+Run npm test and npm run build, summarize failures by severity, and patch issues until both pass.
+```
+
+## Example Queries in Claude/Codex
+
+```json
 {
   "type": "catalog",
-  "query": "budget",
+  "query": "snow",
   "limit": 5
 }
+```
 
-// Get information about a dataset
+```json
 {
   "type": "dataset-metadata",
   "datasetId": "6zsd-86xi"
 }
+```
 
-// Query dataset records with SQL-like syntax
+```json
 {
   "type": "data-access",
   "datasetId": "6zsd-86xi",
-  "soqlQuery": "SELECT * WHERE amount > 1000 ORDER BY date DESC",
-  "limit": 10
+  "query": "SELECT * ORDER BY :updated_at DESC LIMIT 10"
 }
 ```
 
-## Configuration Options
+## Create Your New GitHub Repository from This Fork
 
-The server requires one environment variable:
+After making local changes, create and push your new repo:
 
-- `DATA_PORTAL_URL`: The Socrata data portal URL (e.g., `https://data.cityofchicago.org`)
+```bash
+# inside repo root
+git checkout -b codex/cambridge-docs
+git add .
+git commit -m "docs: add Claude/Codex manual setup and Cambridge defaults"
+```
 
-This can be set:
-- In the Claude Desktop configuration (recommended)
-- In your environment variables
-- Via command line: `DATA_PORTAL_URL=https://data.cityofchicago.org opengov-mcp-server`
+Create a new empty repository on GitHub, then:
+
+```bash
+git remote rename origin upstream
+git remote add origin https://github.com/<YOUR_GITHUB_USERNAME>/<NEW_REPO_NAME>.git
+git push -u origin codex/cambridge-docs
+```
+
+Then open a PR or merge the branch as your default branch strategy requires.
