@@ -248,24 +248,3 @@ Run npm test and npm run build, summarize failures by severity, and patch issues
   "query": "SELECT * ORDER BY :updated_at DESC LIMIT 10"
 }
 ```
-
-## Create Your New GitHub Repository from This Fork
-
-After making local changes, create and push your new repo:
-
-```bash
-# inside repo root
-git checkout -b codex/cambridge-docs
-git add .
-git commit -m "docs: add Claude/Codex manual setup and Cambridge defaults"
-```
-
-Create a new empty repository on GitHub, then:
-
-```bash
-git remote rename origin upstream
-git remote add origin https://github.com/<YOUR_GITHUB_USERNAME>/<NEW_REPO_NAME>.git
-git push -u origin codex/cambridge-docs
-```
-
-Then open a PR or merge the branch as your default branch strategy requires.
