@@ -55,7 +55,7 @@ You can still override per-server with:
 1. Clone source:
 
 ```bash
-git clone https://github.com/hqu/opengov-mcp](https://github.com/hqu/opengov-mcp.git
+git clone https://github.com/hqu/opengov-mcp.git
 cd opengov-mcp
 ```
 
